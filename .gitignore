@@ -1,3 +1,5 @@
+###Python###
+
 *.py[cod]
 
 # C extensions
@@ -26,10 +28,17 @@ pip-log.txt
 .tox
 nosetests.xml
 
-# Translations
+#Translations
 *.mo
 
-# Mr Developer
+#Mr Developer
 .mr.developer.cfg
 .project
 .pydevproject
+
+###SublimeText###
+
+# SublimeText project files
+/*.sublime-project
+*.sublime-workspace
+sftp-config*.json
