@@ -28,7 +28,7 @@ class change_finder(object):
             sys.exit("ERROR! Data length is not enough.")
 
         print("Scoring start.")
-        # X = (X - np.mean(X)) / np.std(X)  # data normalized
+        # X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
         score = self.outlier(X)
         score = self.changepoint(score)
 
@@ -83,34 +83,41 @@ class change_finder(object):
 
 
 def sample():
-    data_a = sp.random.multivariate_normal([20.0, 10.0], sp.eye(2) * 2.0, 200)[:, 0]
-    data_b = sp.random.multivariate_normal([-50.0, 0.0], sp.eye(2) * 3.0, 200)[:, 0]
-    data_c = sp.random.multivariate_normal([50.0, 30.0], sp.eye(2) * -2.0, 200)[:, 0]
-    X = np.r_[data_a, data_b, data_c]
-    c_cf = change_finder(term=50, window=5)
+    from numpy.random import rand, multivariate_normal
+    data_a = multivariate_normal(rand(1) * 20 - 10, np.eye(1) * (rand()), 250)
+    data_b = multivariate_normal(rand(1) * 20 - 10, np.eye(1) * (rand()), 250)
+    data_c = multivariate_normal(rand(1) * 20 - 10, np.eye(1) * (rand()), 250)
+
+    data_d = multivariate_normal(rand(1) * 20 - 10, np.eye(1) * (rand()), 250)
+    X = np.r_[data_a, data_b, data_c, data_d][:, 0]
+    c_cf = change_finder(term=70, window=7, order=(2, 2, 0))
     result = c_cf.main(X)
 
     import matplotlib.pyplot as plt
     fig = plt.figure()
     axL = fig.add_subplot(111)
-    line1, = axL.plot(X, "r-")
-    plt.ylabel("Sample data")
+    line1, = axL.plot(X, "b-", alpha=.7)
+    plt.ylabel("Values")
 
     ax = plt.gca()
-    ax.yaxis.grid(True)
-    ax.xaxis.grid(False)
+    ax.yaxis.grid(False)
+    ax.xaxis.grid(True)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.tick2On = False
+        tick.label2On = False
     for tick in ax.xaxis.get_major_ticks():
         tick.tick2On = False
         tick.label2On = False
 
     axR = fig.add_subplot(111, sharex=axL, frameon=False)
-    line2, = axR.plot(result, "g-", lw=2)
+    line2, = axR.plot(result, "g-", lw=2, alpha=.7)
     axR.yaxis.tick_right()
     axR.yaxis.set_label_position("right")
     plt.ylabel("Score")
+    plt.xlabel("Sample data")
 
     ax = plt.gca()
-    ax.yaxis.grid(True)
+    ax.yaxis.grid(False)
     ax.xaxis.grid(False)
     for tick in ax.yaxis.get_major_ticks():
         tick.tick2On = True
@@ -125,8 +132,8 @@ def sample():
     lines = [line1, line2]
     labels = ["Data", "Score"]
     plt.legend(lines, labels, loc=2)
+    plt.savefig("sample.png", dpi=144)
 
-    plt.show()
 
 if __name__ == '__main__':
     sample()
