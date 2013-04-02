@@ -7,19 +7,20 @@ import scipy as sp
 import statsmodels.tsa.arima_model as ar
 
 
-## Change Finder
+# Change Finder
 class change_finder(object):
-    ## Costructor
+    # Costructor
+
     def __init__(self, term=70, window=5, order=(1, 1, 0)):
-        ## @brief Quantity for learning
+        # @brief Quantity for learning
         self.term = term
-        ## @brief Smoothing width
+        # @brief Smoothing width
         self.window = window
-        ## @brief Order for ARIMA model
+        # @brief Order for ARIMA model
         self.order = order
         print("term:", term, "window:", window, "order:", order)
 
-    ## Main Function
+    # Main Function
     # @param[in] X Data Set
     # @return score vector
     def main(self, X):
@@ -38,32 +39,32 @@ class change_finder(object):
 
         return score
 
-    ## Calculate Outlier Score from Data
+    # Calculate Outlier Score from Data
     # @param[in] X Data Set
     # @return Outlier-score (M-term)-vector
     def outlier(self, X):
         count = len(X) - self.term - 1
 
-        ## train
+        # train
         trains = [X[t:(t + self.term)] for t in range(count)]
         target = [X[t + self.term + 1] for t in range(count)]
         fit = [ar.ARIMA(trains[t], self.order).fit(disp=0) for t in range(count)]
 
-        ## predict
+        # predict
         resid = [fit[t].forecast(1)[0][0] - target[t] for t in range(count)]
         pred = [fit[t].predict() for t in range(count)]
         m = np.mean(pred, axis=1)
         s = np.std(pred, axis=1)
 
-        ## logloss
+        # logloss
         score = -sp.stats.norm.logpdf(resid, m, s)
 
-        ## smoothing
-        score = np.convolve(score, np.ones(self.window) / self.window, 'valid')
+        # smoothing
+        score = self.smoothing(score, self.window)
 
         return score
 
-    ## Calculate ChangepointScore from OutlierScore
+    # Calculate ChangepointScore from OutlierScore
     # @param[in] X Data Set(Outlier Score)
     # @return Outlier-score (M-term)-vector
     def changepoint(self, X):
@@ -75,11 +76,12 @@ class change_finder(object):
         s = np.std(trains, axis=1)
 
         score = -sp.stats.norm.logpdf(target, m, s)
-
-        w = np.round(self.window / 2)
-        score = np.convolve(score, np.ones(w) / w, 'valid')  # smoothing
+        score = self.smoothing(score, np.round(self.window / 2))
 
         return score
+
+    def smoothing(self, X, w):
+        return np.convolve(X, np.ones(w) / w, 'valid')
 
 
 def sample():
@@ -92,48 +94,8 @@ def sample():
     X = np.r_[data_a, data_b, data_c, data_d][:, 0]
     c_cf = change_finder(term=70, window=7, order=(2, 2, 0))
     result = c_cf.main(X)
-
-    import matplotlib.pyplot as plt
-    fig = plt.figure()
-    axL = fig.add_subplot(111)
-    line1, = axL.plot(X, "b-", alpha=.7)
-    plt.ylabel("Values")
-
-    ax = plt.gca()
-    ax.yaxis.grid(False)
-    ax.xaxis.grid(True)
-    for tick in ax.yaxis.get_major_ticks():
-        tick.tick2On = False
-        tick.label2On = False
-    for tick in ax.xaxis.get_major_ticks():
-        tick.tick2On = False
-        tick.label2On = False
-
-    axR = fig.add_subplot(111, sharex=axL, frameon=False)
-    line2, = axR.plot(result, "g-", lw=2, alpha=.7)
-    axR.yaxis.tick_right()
-    axR.yaxis.set_label_position("right")
-    plt.ylabel("Score")
-    plt.xlabel("Sample data")
-
-    ax = plt.gca()
-    ax.yaxis.grid(False)
-    ax.xaxis.grid(False)
-    for tick in ax.yaxis.get_major_ticks():
-        tick.tick2On = True
-        tick.label2On = True
-    for tick in ax.xaxis.get_major_ticks():
-        tick.tick2On = False
-        tick.label2On = False
-
-    plt.title("Sample: Change Anomaly Detection")
-
-    ## title, legend
-    lines = [line1, line2]
-    labels = ["Data", "Score"]
-    plt.legend(lines, labels, loc=2)
-    plt.savefig("sample.png", dpi=144)
+    return result
 
 
 if __name__ == '__main__':
-    sample()
+    print(sample())
