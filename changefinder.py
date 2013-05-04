@@ -80,6 +80,10 @@ class change_finder(object):
 
         return score
 
+    # Calculate ChangepointScore from OutlierScore
+    # @param[in] X Data set
+    # @param[in] w Window size
+    # @return Smoothing-score
     def smoothing(self, X, w):
         return np.convolve(X, np.ones(w) / w, 'valid')
 
